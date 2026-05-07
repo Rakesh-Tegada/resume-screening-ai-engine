@@ -3,9 +3,37 @@ import re
 import pdfplumber
 import spacy
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
+from fastapi.middleware.cors import CORSMiddleware  # <-- THE IMPORT
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, util
 
+# Initialize FastAPI with professional metadata
+app = FastAPI(
+    title="Semantic Resume Screening AI", 
+    description="Context-aware NLP engine for matching resumes to job descriptions.",
+    version="1.0.0"
+)
+
+# --- CORS VIP PASS ---
+# Notice how we are using CORSMiddleware right here. 
+# This will make the "not accessed" warning disappear immediately!
+# --- CORS VIP PASS ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ], 
+    allow_credentials=True, 
+    allow_methods=["*"],  
+    allow_headers=["*"],  
+)
+# --------------------------------------
+
+# ---------------------------------------------------------
+# AI MODEL INITIALIZATION (Singleton Pattern)
+# ---------------------------------------------------------
+print("Loading AI Models into memory... This may take a minute.")
 # Initialize FastAPI with professional metadata
 app = FastAPI(
     title="Semantic Resume Screening AI", 
@@ -64,20 +92,15 @@ def extract_contact_info(text: str) -> dict:
     }
 
 
-# ---------------------------------------------------------
+
 # API ENDPOINTS
-# ---------------------------------------------------------
+
 @app.post("/api/v1/screen-resume", response_model=ScreeningResult)
 async def screen_resume(
     resume_pdf: UploadFile = File(...), 
     job_description: str = Form(...)
 ):
-    """
-    Main inference endpoint. 
-    Accepts a PDF file and a Job Description string.
-    Returns a semantic match score and extracted data.
-    """
-    
+  
     # 1. Read and Extract Text
     file_bytes = await resume_pdf.read()
     resume_text = extract_text_from_pdf(file_bytes)
