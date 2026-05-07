@@ -3,21 +3,18 @@ import re
 import pdfplumber
 import spacy
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
-from fastapi.middleware.cors import CORSMiddleware  # <-- THE IMPORT
+from fastapi.middleware.cors import CORSMiddleware  
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, util
 
-# Initialize FastAPI with professional metadata
+# 1. Initialize FastAPI (ONLY ONCE!)
 app = FastAPI(
     title="Semantic Resume Screening AI", 
     description="Context-aware NLP engine for matching resumes to job descriptions.",
     version="1.0.0"
 )
 
-# --- CORS VIP PASS ---
-# Notice how we are using CORSMiddleware right here. 
-# This will make the "not accessed" warning disappear immediately!
-# --- CORS VIP PASS ---
+# 2. Add CORS VIP Pass
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -28,31 +25,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# --------------------------------------
 
-# ---------------------------------------------------------
-# AI MODEL INITIALIZATION (Singleton Pattern)
-# ---------------------------------------------------------
-print("Loading AI Models into memory... This may take a minute.")
-# Initialize FastAPI with professional metadata
-app = FastAPI(
-    title="Semantic Resume Screening AI", 
-    description="Context-aware NLP engine for matching resumes to job descriptions.",
-    version="1.0.0"
-)
-
-# ---------------------------------------------------------
-# AI MODEL INITIALIZATION (Singleton Pattern)
-# ---------------------------------------------------------
+# 3. Load AI Models
 print("Loading AI Models into memory... This may take a minute.")
 nlp = spacy.load("en_core_web_sm")
 encoder = SentenceTransformer('all-MiniLM-L6-v2')
 print("Models loaded successfully. Server ready.")
 
 
-# ---------------------------------------------------------
-# PYDANTIC SCHEMAS (Strict Type Validation)
-# ---------------------------------------------------------
+# 4. Pydantic Schemas
 class ScreeningResult(BaseModel):
     filename: str
     match_score_percentage: float
@@ -61,11 +42,8 @@ class ScreeningResult(BaseModel):
     key_entities: list[str]
 
 
-# ---------------------------------------------------------
-# HELPER FUNCTIONS
-# ---------------------------------------------------------
+# 5. Helper Functions
 def extract_text_from_pdf(file_bytes: bytes) -> str:
-    """Extracts raw text from PDF bytes safely."""
     text = ""
     try:
         with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
@@ -79,7 +57,6 @@ def extract_text_from_pdf(file_bytes: bytes) -> str:
     return text.strip()
 
 def extract_contact_info(text: str) -> dict:
-    """Uses Regex to find standard contact identifiers."""
     email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_pattern = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
     
@@ -92,28 +69,26 @@ def extract_contact_info(text: str) -> dict:
     }
 
 
-
-# API ENDPOINTS
-
+# 6. API Endpoint
 @app.post("/api/v1/screen-resume", response_model=ScreeningResult)
 async def screen_resume(
     resume_pdf: UploadFile = File(...), 
     job_description: str = Form(...)
 ):
   
-    # 1. Read and Extract Text
+    # Read and Extract Text
     file_bytes = await resume_pdf.read()
     resume_text = extract_text_from_pdf(file_bytes)
     
     if not resume_text:
         raise HTTPException(status_code=400, detail="No readable text found in the PDF.")
 
-    # 2. Named Entity Recognition (NER) via spaCy
+    # Named Entity Recognition (NER) via spaCy
     doc = nlp(resume_text)
     entities = list(set([ent.text.strip() for ent in doc.ents if ent.label_ in ["ORG", "GPE", "PRODUCT"]]))
     contact_info = extract_contact_info(resume_text)
 
-    # 3. Deep Semantic Matching via HuggingFace Transformers
+    # Deep Semantic Matching via HuggingFace Transformers
     resume_embedding = encoder.encode(resume_text, convert_to_tensor=True)
     jd_embedding = encoder.encode(job_description, convert_to_tensor=True)
 
@@ -122,7 +97,7 @@ async def screen_resume(
     match_score = float(cosine_scores[0][0]) * 100
     match_score = max(0.0, match_score)
 
-    # 4. Return structured JSON
+    # Return structured JSON
     return ScreeningResult(
         filename=resume_pdf.filename,
         match_score_percentage=round(match_score, 2),
