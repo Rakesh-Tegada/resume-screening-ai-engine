@@ -33,7 +33,7 @@ networkx==3.6.1
 numpy==2.4.3
 packaging==26.2
 pdfminer.six==20251230
-pdfplumber==0.11.9
+pdfplumber
 pillow==12.1.1
 preshed==3.0.13
 pycparser==3.0
@@ -49,10 +49,10 @@ rich==15.0.0
 safetensors==0.7.0
 scikit-learn==1.8.0
 scipy==1.17.1
-sentence-transformers==5.4.1
+sentence-transformers
 shellingham==1.5.4
 smart_open==7.6.0
-spacy==3.8.14
+spacy
 spacy-legacy==3.0.12
 spacy-loggers==1.0.5
 srsly==2.5.3
