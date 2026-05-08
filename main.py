@@ -1,3 +1,17 @@
+import os
+# Force PyTorch and Math libraries to use only 1 thread and minimal memory
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+
+import torch
+torch.set_num_threads(1)
+
+# --- Your normal imports start here ---
+import io
+import re
+import pdfplumber
+# ... the rest of your code
 import io
 import re
 import pdfplumber
